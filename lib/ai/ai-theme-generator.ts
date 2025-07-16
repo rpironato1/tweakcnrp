@@ -1,29 +1,56 @@
 import { useEditorStore } from "@/store/editor-store";
-import { AIPromptData } from "@/types/ai";
+import { ChatMessage } from "@/types/ai";
+import { ApiError, ApiErrorCode } from "@/types/errors";
+import { SubscriptionStatus } from "@/types/subscription";
 import { Theme } from "@/types/theme";
-import { buildPromptForAPI } from "@/utils/ai/ai-prompt";
+import { convertChatMessagesToCoreMessages } from "@/utils/ai/message-converter";
 import { mergeThemeStylesWithDefaults } from "@/utils/theme-styles";
+
+async function handleError(response: Response) {
+  const contentType = response.headers.get("Content-Type") || "";
+  if (contentType.includes("application/json")) {
+    const { code, message, data } = await response.json();
+    throw new ApiError(
+      (code as ApiErrorCode) ?? "UNKNOWN_ERROR",
+      message ?? "Error",
+      data,
+      response.status
+    );
+  }
+  const text = await response.text();
+  throw new ApiError(
+    "UNKNOWN_ERROR",
+    text || "Failed to generate theme",
+    undefined,
+    response.status
+  );
+}
 
 /**
  * Generate a theme with AI using a text prompt
  */
-export async function generateThemeWithAI(prompt: string, options?: { signal?: AbortSignal }) {
-  if (!prompt.trim()) return null;
-
+export async function generateThemeWithAI(
+  messages: ChatMessage[],
+  options?: { signal?: AbortSignal }
+): Promise<{
+  text: string;
+  theme: Theme["styles"];
+  subscriptionStatus?: SubscriptionStatus;
+}> {
   try {
+    const coreMessages = await convertChatMessagesToCoreMessages(messages);
+
     const response = await fetch("/api/generate-theme", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({ messages: coreMessages }),
       signal: options?.signal,
     });
 
     if (!response.ok) {
-      const errorBody = await response.text();
-      const errorMessage = errorBody || "Failed to generate theme. Please try again.";
-      throw new Error(errorMessage);
+      await handleError(response);
     }
 
     const result = await response.json();
@@ -59,8 +86,4 @@ export function applyGeneratedTheme(themeStyles: Theme["styles"]) {
       });
     });
   }
-}
-
-export function buildPrompt(promptData: AIPromptData) {
-  return buildPromptForAPI(promptData);
 }

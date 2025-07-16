@@ -1,12 +1,9 @@
 "use client";
 
 import { suggestion } from "@/components/editor/mention-suggestion";
-import { useAIThemeGeneration } from "@/hooks/use-ai-theme-generation";
+import { useAIThemeGenerationCore } from "@/hooks/use-ai-theme-generation-core";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useEditorStore } from "@/store/editor-store";
-import { useThemePresetStore } from "@/store/theme-preset-store";
-import { AIPromptData, MentionReference } from "@/types/ai";
 import CharacterCount from "@tiptap/extension-character-count";
 import Mention from "@tiptap/extension-mention";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -15,74 +12,23 @@ import StarterKit from "@tiptap/starter-kit";
 import React, { useEffect } from "react";
 
 interface CustomTextareaProps {
-  onContentChange: (promptData: AIPromptData) => void;
+  onContentChange: (jsonContent: JSONContent) => void;
   onGenerate?: () => void;
   characterLimit?: number;
+  onImagesPaste?: (files: File[]) => void;
+  initialEditorContent?: JSONContent | null;
+  className?: string;
 }
-
-// Utility function to extract text content (user prompt) and theme mentions from the JSON content
-// we need both separate to create the prompt data to send to the AI
-// we also need to handle the line breaks correctly, both in copy/paste and while typing directly
-const extractTextContentAndMentions = (
-  node: JSONContent
-): { content: string; mentions: MentionReference[] } => {
-  const textArr: string[] = [];
-  const mentionsArr: MentionReference[] = [];
-
-  // This is a recursive function that walks through the JSON content (even nested) and extracts the text content and mentions
-  const walk = (n: JSONContent) => {
-    if (n.type === "text") {
-      textArr.push(n.text || "");
-    }
-    if (n.type === "mention") {
-      textArr.push(`@${n.attrs?.label}`);
-      const id = n.attrs?.id;
-      const label = n.attrs?.label;
-      let themeData;
-      if (id === "editor:current-changes") {
-        themeData = useEditorStore.getState().themeState.styles;
-      } else {
-        const preset = useThemePresetStore.getState().getPreset(id);
-        themeData = preset?.styles || { light: {}, dark: {} };
-      }
-      mentionsArr.push({ id, label, themeData });
-    }
-    if (n.type === "hardBreak") {
-      textArr.push("\n");
-    }
-    if (n.content) {
-      n.content.forEach((child) => walk(child));
-    }
-  };
-
-  const blocks = node.content;
-  if (Array.isArray(blocks) && blocks.length > 0) {
-    blocks.forEach((block, idx) => {
-      walk(block);
-      if (idx < blocks.length - 1) {
-        textArr.push("\n");
-      }
-    });
-  } else {
-    walk(node);
-  }
-
-  const formattedText = textArr.join("").replace(/\\n/g, "\n");
-
-  return { content: formattedText, mentions: mentionsArr };
-};
-
-const convertJSONContentToPromptData = (jsonContent: JSONContent): AIPromptData => {
-  const { content, mentions } = extractTextContentAndMentions(jsonContent);
-  return { content, mentions };
-};
 
 const CustomTextarea: React.FC<CustomTextareaProps> = ({
   onContentChange,
   onGenerate,
   characterLimit,
+  onImagesPaste,
+  initialEditorContent,
+  className,
 }) => {
-  const { loading: aiGenerateLoading } = useAIThemeGeneration();
+  const { loading: aiGenerateLoading } = useAIThemeGenerationCore();
   const { toast } = useToast();
 
   const editor = useEditor({
@@ -98,7 +44,7 @@ const CustomTextarea: React.FC<CustomTextareaProps> = ({
       Placeholder.configure({
         placeholder: "Describe your theme...",
         emptyEditorClass:
-          "cursor-text before:content-[attr(data-placeholder)] before:absolute before:top-2 before:left-3 before:text-mauve-11 before:opacity-50 before-pointer-events-none",
+          "cursor-text before:content-[attr(data-placeholder)] before:absolute before:inset-x-1 before:top-1 before:opacity-50 before-pointer-events-none",
       }),
       CharacterCount.configure({
         limit: characterLimit,
@@ -107,8 +53,10 @@ const CustomTextarea: React.FC<CustomTextareaProps> = ({
     autofocus: !aiGenerateLoading,
     editorProps: {
       attributes: {
-        class:
-          "min-h-[60px] max-h-[150px] wrap-anywhere text-foreground/90 scrollbar-thin overflow-y-auto w-full rounded-md bg-background px-3 py-2 pb-6 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50 max-sm:text-[16px]!",
+        class: cn(
+          "min-w-0 min-h-[60px] max-h-[150px] wrap-anywhere text-foreground/90 scrollbar-thin overflow-y-auto w-full bg-background px-1 py-1 text-sm focus-visible:outline-none disabled:opacity-50 max-sm:text-[16px]!",
+          className
+        ),
       },
       handleKeyDown: (view, event) => {
         if (event.key === "Enter" && !event.shiftKey && !aiGenerateLoading) {
@@ -138,6 +86,18 @@ const CustomTextarea: React.FC<CustomTextareaProps> = ({
         const clipboardData = event.clipboardData;
         if (!clipboardData) return false;
 
+        // Check for image files
+        if (onImagesPaste) {
+          const files = Array.from(clipboardData.files);
+          const imageFiles = files.filter((file) => file.type.startsWith("image/"));
+
+          if (imageFiles.length > 0) {
+            event.preventDefault();
+            onImagesPaste(imageFiles);
+            return true;
+          }
+        }
+
         const pastedText = clipboardData.getData("text/plain");
         const currentCharacterCount = editor?.storage.characterCount.characters() || 0;
         const totalCharacters = currentCharacterCount + pastedText.length;
@@ -155,10 +115,13 @@ const CustomTextarea: React.FC<CustomTextareaProps> = ({
         return false;
       },
     },
+    content: initialEditorContent || "",
+    onCreate: ({ editor }) => {
+      editor.commands.focus("end");
+    },
     onUpdate: ({ editor }) => {
       const jsonContent = editor.getJSON();
-      const promptData = convertJSONContentToPromptData(jsonContent);
-      onContentChange(promptData);
+      onContentChange(jsonContent);
     },
   });
 

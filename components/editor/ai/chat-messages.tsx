@@ -1,21 +1,67 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useAIChat } from "@/hooks/use-ai-chat";
-import { useAIThemeGeneration } from "@/hooks/use-ai-theme-generation";
+import { useAIThemeGenerationCore } from "@/hooks/use-ai-theme-generation-core";
 import { cn } from "@/lib/utils";
-import { type ChatMessage as ChatMessageType } from "@/types/ai";
+import { AIPromptData, type ChatMessage as ChatMessageType } from "@/types/ai";
 import { useEffect, useRef, useState } from "react";
 import { LoadingLogo } from "./loading-logo";
 import Message from "./message";
 
 type ChatMessagesProps = {
+  messages: ChatMessageType[];
   onRetry: (messageIndex: number) => void;
+  onEdit: (messageIndex: number) => void;
+  onEditSubmit: (messageIndex: number, newPromptData: AIPromptData) => void;
+  onEditCancel: () => void;
+  editingMessageIndex?: number | null;
 };
 
-export function ChatMessages({ onRetry }: ChatMessagesProps) {
+const FEEDBACK_MESSAGES = [
+  "Generating", // 0-7s
+  "Tweaking color tokens", // 8-15s
+  "This might take some time", // 16-23s
+  "Generating a good theme takes time", // 24-31s
+  "Still working on your theme", // 32-39s
+  "Almost there", // 40s+
+];
+
+const ROTATION_INTERVAL_IN_SECONDS = 8;
+
+export function ChatMessages({
+  messages,
+  onRetry,
+  onEdit,
+  onEditSubmit,
+  onEditCancel,
+  editingMessageIndex,
+}: ChatMessagesProps) {
   const [isScrollTop, setIsScrollTop] = useState(true);
-  const { messages } = useAIChat();
-  const { loading: isAIGenerating } = useAIThemeGeneration();
+  const { loading: isAIGenerating } = useAIThemeGenerationCore();
   const previousMessages = useRef<ChatMessageType[]>(messages);
+
+  const [elapsedTimeGenerating, setElapsedTimeGenerating] = useState(0);
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+
+    if (isAIGenerating) {
+      setElapsedTimeGenerating(0);
+
+      interval = setInterval(() => {
+        setElapsedTimeGenerating((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setElapsedTimeGenerating(0);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isAIGenerating]);
+
+  const feedbackIndex = Math.min(
+    Math.floor(elapsedTimeGenerating / ROTATION_INTERVAL_IN_SECONDS),
+    FEEDBACK_MESSAGES.length - 1
+  );
+  const feedbackText = FEEDBACK_MESSAGES[feedbackIndex];
 
   const messagesStartRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -56,7 +102,7 @@ export function ChatMessages({ onRetry }: ChatMessagesProps) {
       {/* Top fade out effect when scrolling */}
       <div
         className={cn(
-          "via-background/50 from-background pointer-events-none absolute top-0 right-0 left-0 z-20 h-8 bg-gradient-to-b to-transparent opacity-100 transition-opacity ease-out",
+          "via-background/50 from-background pointer-events-none absolute top-0 right-0 left-0 z-20 h-6 bg-gradient-to-b to-transparent opacity-100 transition-opacity ease-out",
           isScrollTop ? "opacity-0" : "opacity-100"
         )}
       />
@@ -64,7 +110,15 @@ export function ChatMessages({ onRetry }: ChatMessagesProps) {
         <div ref={messagesStartRef} />
         <div className="flex flex-col gap-8 text-pretty wrap-anywhere">
           {messages.map((message, index) => (
-            <Message key={message.id} message={message} onRetry={() => onRetry(index)} />
+            <Message
+              key={message.id}
+              message={message}
+              onRetry={() => onRetry(index)}
+              isEditing={editingMessageIndex === index}
+              onEdit={() => onEdit(index)}
+              onEditSubmit={(newPromptData) => onEditSubmit(index, newPromptData)}
+              onEditCancel={onEditCancel}
+            />
           ))}
 
           {/* Loading message when AI is generating */}
@@ -75,7 +129,7 @@ export function ChatMessages({ onRetry }: ChatMessagesProps) {
               </div>
 
               <p className="inline-flex animate-pulse gap-0.25 delay-150">
-                <span className="text-sm">Generating</span>
+                <span className="text-sm">{feedbackText}</span>
                 <span className="animate-bounce delay-100">.</span>
                 <span className="animate-bounce delay-200">.</span>
                 <span className="animate-bounce delay-300">.</span>

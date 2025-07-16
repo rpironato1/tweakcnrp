@@ -1,79 +1,142 @@
 "use client";
 
-import { Loading } from "@/components/loading";
 import { TooltipWrapper } from "@/components/tooltip-wrapper";
 import { Button } from "@/components/ui/button";
-import { useAIThemeGeneration } from "@/hooks/use-ai-theme-generation";
-import { AI_PROMPT_CHARACTER_LIMIT } from "@/lib/constants";
+import { useAIChatForm } from "@/hooks/use-ai-chat-form";
+import { useAIThemeGenerationCore } from "@/hooks/use-ai-theme-generation-core";
+import { useGuards } from "@/hooks/use-guards";
+import { usePostLoginAction } from "@/hooks/use-post-login-action";
+import { MAX_IMAGE_FILES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useAIChatStore } from "@/store/ai-chat-store";
 import { AIPromptData } from "@/types/ai";
 import { ArrowUp, Loader, Plus, StopCircle } from "lucide-react";
-import dynamic from "next/dynamic";
-import { useState } from "react";
-
-const CustomTextarea = dynamic(() => import("@/components/editor/custom-textarea"), {
-  ssr: false,
-  loading: () => <Loading className="min-h-[60px] w-full rounded-lg" />,
-});
+import { AIChatFormBody } from "./ai-chat-form-body";
+import { AlertBanner } from "./alert-banner";
+import { ImageUploader } from "./image-uploader";
+type ThemeGenerationPayload = {
+  promptData: AIPromptData | null;
+  options: {
+    shouldClearLocalDraft?: boolean;
+  };
+};
 
 export function ChatInput({
-  handleThemeGeneration,
+  onGenerateTheme,
 }: {
-  handleThemeGeneration: (promptData: AIPromptData | null) => void;
+  onGenerateTheme: (promptData: AIPromptData | null) => Promise<void>;
 }) {
-  const [promptData, setPromptData] = useState<AIPromptData | null>(null);
-  const { loading: aiGenerateLoading, cancelThemeGeneration } = useAIThemeGeneration();
-
   const { messages, clearMessages } = useAIChatStore();
+  const { loading: aiGenerateLoading, cancelThemeGeneration } = useAIThemeGenerationCore();
+  const { checkValidSession, checkValidSubscription } = useGuards();
 
-  const handleContentChange = (newPromptData: AIPromptData) => {
-    setPromptData(newPromptData);
+  const {
+    editorContentDraft,
+    handleContentChange,
+    promptData,
+    isEmptyPrompt,
+    clearLocalDraft,
+    uploadedImages,
+    fileInputRef,
+    handleImagesUpload,
+    handleImageRemove,
+    clearUploadedImages,
+    isSomeImageUploading,
+    isUserDragging,
+  } = useAIChatForm();
+
+  const handleNewChat = () => {
+    clearMessages();
+    clearLocalDraft();
+    clearUploadedImages();
   };
 
-  const handleGenerate = async () => {
-    if (!promptData?.content) return;
+  const generateTheme = async (payload: ThemeGenerationPayload) => {
+    const { promptData, options } = payload;
 
-    handleThemeGeneration(promptData);
+    if (options.shouldClearLocalDraft) {
+      clearLocalDraft();
+      clearUploadedImages();
+    }
+
+    onGenerateTheme(promptData);
   };
+
+  const handleGenerateSubmit = async () => {
+    // Only send images that are not loading, and strip loading property
+    const images = uploadedImages.filter((img) => !img.loading).map(({ url }) => ({ url }));
+
+    // Proceed only if there is text, or at least one image
+    if (isEmptyPrompt && images.length === 0) return;
+
+    const payload: ThemeGenerationPayload = {
+      promptData: {
+        ...promptData,
+        images,
+      },
+      options: {
+        shouldClearLocalDraft: true,
+      },
+    };
+
+    if (!checkValidSession("signup", "AI_GENERATE_FROM_CHAT", payload)) return;
+    if (!checkValidSubscription()) return;
+
+    generateTheme(payload);
+  };
+
+  usePostLoginAction("AI_GENERATE_FROM_CHAT", (payload) => {
+    generateTheme(payload);
+  });
 
   return (
-    <div className="@container/form relative transition-all">
-      <div className="bg-background relative z-10 flex size-full min-h-[100px] flex-1 flex-col gap-2 overflow-hidden rounded-lg border shadow-xs">
-        <label className="sr-only">Chat Input</label>
-        <div className="min-h-[60px] p-2 pb-0">
-          <div className="bg-muted/40 relative isolate rounded-lg">
-            <CustomTextarea
-              onContentChange={handleContentChange}
-              onGenerate={handleGenerate}
-              key={messages.length}
-              characterLimit={AI_PROMPT_CHARACTER_LIMIT}
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between gap-2 px-2 pb-2">
+    <div className="relative transition-all contain-layout">
+      <AlertBanner />
+      <div className="bg-background relative isolate z-10 flex size-full min-h-[100px] flex-1 flex-col gap-2 overflow-hidden rounded-lg border p-2 shadow-xs">
+        <AIChatFormBody
+          isUserDragging={isUserDragging}
+          aiGenerateLoading={aiGenerateLoading}
+          uploadedImages={uploadedImages}
+          handleImagesUpload={handleImagesUpload}
+          handleImageRemove={handleImageRemove}
+          handleContentChange={handleContentChange}
+          handleGenerate={handleGenerateSubmit}
+          initialEditorContent={editorContentDraft ?? undefined}
+          textareaKey={messages.length}
+        />
+        <div className="@container/form flex items-center justify-between gap-2">
           <TooltipWrapper label="Create new chat" asChild>
             <Button
               variant="outline"
               size="sm"
-              onClick={clearMessages}
+              onClick={handleNewChat}
               disabled={aiGenerateLoading || messages.length === 0}
-              className="shadow-none"
+              className="flex items-center gap-1.5 shadow-none"
             >
               <Plus />
               <span>New chat</span>
             </Button>
           </TooltipWrapper>
+
           <div className="flex items-center gap-2">
-            {/* TODO: Add image upload */}
+            <ImageUploader
+              fileInputRef={fileInputRef}
+              onImagesUpload={handleImagesUpload}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={
+                aiGenerateLoading ||
+                uploadedImages.some((img) => img.loading) ||
+                uploadedImages.length >= MAX_IMAGE_FILES
+              }
+            />
+
             {aiGenerateLoading ? (
               <TooltipWrapper label="Cancel generation" asChild>
                 <Button
                   variant="destructive"
                   size="sm"
                   onClick={cancelThemeGeneration}
-                  className={cn("flex items-center gap-1 shadow-none", "@max-[350px]/form:w-8")}
+                  className={cn("flex items-center gap-1.5 shadow-none", "@max-[350px]/form:w-8")}
                 >
                   <StopCircle />
                   <span className="hidden @[350px]/form:inline-flex">Stop</span>
@@ -82,10 +145,10 @@ export function ChatInput({
             ) : (
               <TooltipWrapper label="Send message" asChild>
                 <Button
-                  size="icon"
+                  size="sm"
                   className="size-8 shadow-none"
-                  onClick={handleGenerate}
-                  disabled={!promptData?.content || aiGenerateLoading}
+                  onClick={handleGenerateSubmit}
+                  disabled={isEmptyPrompt || isSomeImageUploading || aiGenerateLoading}
                 >
                   {aiGenerateLoading ? <Loader className="animate-spin" /> : <ArrowUp />}
                 </Button>
