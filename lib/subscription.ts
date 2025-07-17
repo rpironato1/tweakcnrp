@@ -10,7 +10,7 @@ import { db } from "@/db";
 import { subscription } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 
-async function getMyActiveSubscription(
+export async function getMyActiveSubscription(
   userId: string
 ): Promise<typeof subscription.$inferSelect | null> {
   const sub = await db

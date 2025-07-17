@@ -16,6 +16,7 @@ import {
   ThemeLimitError,
 } from "@/types/errors";
 import { MAX_FREE_THEMES } from "@/lib/constants";
+import { getMyActiveSubscription } from "@/lib/subscription";
 
 // Helper to get user ID with better error handling
 async function getCurrentUserId(): Promise<string> {
@@ -98,8 +99,16 @@ export async function createTheme(formData: { name: string; styles: ThemeStyles 
 
     // Check theme limit
     const userThemes = await db.select().from(themeTable).where(eq(themeTable.userId, userId));
+
     if (userThemes.length >= MAX_FREE_THEMES) {
-      throw new ThemeLimitError(`You cannot have more than ${MAX_FREE_THEMES} themes yet.`);
+      const activeSubscription = await getMyActiveSubscription(userId);
+      const isSubscribed =
+        !!activeSubscription &&
+        activeSubscription?.productId === process.env.NEXT_PUBLIC_TWEAKCN_PRO_PRODUCT_ID;
+
+      if (!isSubscribed) {
+        throw new ThemeLimitError(`You cannot have more than ${MAX_FREE_THEMES} themes.`);
+      }
     }
 
     const { name, styles } = validation.data;
