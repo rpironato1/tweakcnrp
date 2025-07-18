@@ -1,4 +1,4 @@
-import "server-only";
+"use server";
 
 import { getMyAllTimeRequestCount } from "@/actions/ai-usage";
 import { SubscriptionRequiredError } from "@/types/errors";

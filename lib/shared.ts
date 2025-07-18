@@ -1,5 +1,3 @@
-import "server-only";
-
 import { UnauthorizedError } from "@/types/errors";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
