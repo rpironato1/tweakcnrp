@@ -1,5 +1,3 @@
-"use client";
-
 import { NoiseEffect } from "@/components/effects/noise-effect";
 import {
   Accordion,
@@ -15,6 +13,28 @@ import { FREE_SUB_FEATURES, PRO_SUB_FEATURES } from "@/utils/subscription";
 import { Calendar, Check, Circle, Mail } from "lucide-react";
 import Link from "next/link";
 import { CheckoutButton } from "./components/checkout-button";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Pricing — tweakcn",
+  robots: "index, follow",
+};
+
+const PromoBadge = () => {
+  return (
+    <div className="mb-6 flex min-w-80 items-center justify-center">
+      <div className="bg-muted border-primary/10 inline-flex items-center gap-2 rounded-full border px-4 py-2">
+        <span className="text-muted-foreground text-sm">Use code</span>
+        <div className="flex items-center gap-1">
+          <code className="bg-primary/80 border-border text-primary-foreground rounded border px-2 py-1 font-mono text-xs font-bold">
+            LAUNCH50
+          </code>
+        </div>
+        <span className="text-muted-foreground text-sm">for 50% off</span>
+      </div>
+    </div>
+  );
+};
 
 export default function PricingPage() {
   return (
@@ -80,6 +100,9 @@ export default function PricingPage() {
 
           {/* Pro Plan */}
           <Card className="group ring-primary/50 from-card to-primary/5 relative border-2 bg-gradient-to-b ring-2 transition-all duration-300">
+            <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+              <PromoBadge />
+            </div>
             <div className="relative flex h-full flex-col">
               <CardHeader className="relative space-y-2 border-b">
                 <NoiseEffect />
@@ -130,7 +153,6 @@ export default function PricingPage() {
             </div>
           </Card>
         </section>
-
         {/* FAQs Section */}
         <section className="mx-auto max-w-3xl space-y-8">
           <div className="space-y-2 text-center">
@@ -161,7 +183,6 @@ export default function PricingPage() {
             ))}
           </Accordion>
         </section>
-
         {/* Bottom Section */}
         <div className="text-center">
           <div className="mx-auto max-w-2xl space-y-2">

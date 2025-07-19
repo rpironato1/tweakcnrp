@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Metadata } from "next";
 
 interface PricingFeature {
   text: string;
@@ -31,11 +30,6 @@ interface Pricing2Props {
   description?: string;
   plans?: PricingPlan[];
 }
-
-export const metadata: Metadata = {
-  title: "Pricing — tweakcn",
-  robots: "index, follow",
-};
 
 const Pricing2 = ({
   heading = "Pricing",
