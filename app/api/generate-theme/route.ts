@@ -4,7 +4,7 @@ import { getCurrentUserId, logError } from "@/lib/shared";
 import { validateSubscriptionAndUsage } from "@/lib/subscription";
 import { SubscriptionRequiredError } from "@/types/errors";
 import { requestSchema, responseSchema, SYSTEM_PROMPT } from "@/utils/ai/generate-theme";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createGoogleGenerativeAI, GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import { Ratelimit } from "@upstash/ratelimit";
 import { kv } from "@vercel/kv";
 import { generateText, Output } from "ai";
@@ -61,6 +61,13 @@ export async function POST(req: NextRequest) {
       system: SYSTEM_PROMPT,
       messages,
       abortSignal: req.signal,
+      providerOptions: {
+        google: {
+          thinkingConfig: {
+            thinkingBudget: 128,
+          },
+        } satisfies GoogleGenerativeAIProviderOptions,
+      },
     });
 
     if (usage) {
