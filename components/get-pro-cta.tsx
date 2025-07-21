@@ -10,11 +10,11 @@ import Link from "next/link";
 interface GetProCTAProps extends React.ComponentProps<typeof Button> {}
 
 export function GetProCTA({ className, ...props }: GetProCTAProps) {
-  const { data: session } = authClient.useSession();
+  const { isPending: isSessionPending } = authClient.useSession();
   const { subscriptionStatus, isPending } = useSubscription();
   const isPro = subscriptionStatus?.isSubscribed ?? false;
 
-  if (isPending || isPro || !session?.user) {
+  if (isPending || isSessionPending || isPro) {
     return null;
   }
 

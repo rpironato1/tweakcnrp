@@ -44,16 +44,25 @@ export function AIGenerationCTA() {
                   </p>
                 </div>
 
-                <div className="flex w-fit flex-col gap-4">
-                  <Button
-                    asChild
-                    size="lg"
-                    className="border-primary/20 hover:border-primary/50 h-12 cursor-pointer rounded-full px-8 text-base transition-transform duration-250 hover:translate-y-[-2px]"
-                  >
-                    <Link href="/ai">
+                <div className="flex w-fit flex-col gap-4 md:flex-row">
+                  <Link href="/ai">
+                    <Button
+                      size="lg"
+                      className="border-primary/20 hover:border-primary/50 h-12 cursor-pointer rounded-full px-8 text-base transition-transform duration-250 hover:translate-y-[-2px]"
+                    >
                       Try it Free <ArrowRight className="ml-2" />
-                    </Link>
-                  </Button>
+                    </Button>
+                  </Link>
+
+                  <Link href="/pricing">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="border-primary/20 hover:border-primary/50 h-12 cursor-pointer rounded-full px-8 text-base transition-transform duration-300 hover:translate-y-[-2px]"
+                    >
+                      Get Pro
+                    </Button>
+                  </Link>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-6">

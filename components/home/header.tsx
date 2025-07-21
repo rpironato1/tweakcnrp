@@ -17,6 +17,29 @@ interface HeaderProps {
   setMobileMenuOpen: (open: boolean) => void;
 }
 
+const navbarItems = [
+  {
+    label: "Examples",
+    href: "#examples",
+  },
+  {
+    label: "Features",
+    href: "#features",
+  },
+  {
+    label: "Pricing",
+    href: "/pricing",
+  },
+  {
+    label: "Roadmap",
+    href: "#roadmap",
+  },
+  {
+    label: "FAQ",
+    href: "#faq",
+  },
+];
+
 export function Header({ isScrolled, mobileMenuOpen, setMobileMenuOpen }: HeaderProps) {
   const { stargazersCount } = useGithubStars("jnsahaj", "tweakcn");
 
@@ -46,17 +69,17 @@ export function Header({ isScrolled, mobileMenuOpen, setMobileMenuOpen }: Header
           </div>
         </Link>
         <nav className="hidden items-center gap-4 md:flex lg:gap-8">
-          {["Examples", "Features", "How It Works", "Roadmap", "FAQ"].map((item, i) => (
+          {navbarItems.map((item, i) => (
             <motion.a
-              key={item}
+              key={item.label}
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.1 + i * 0.05 }}
-              href={`#${item.toLowerCase().replace(/\s+/g, "-")}`}
-              onClick={handleScrollToSection}
+              href={item.href}
+              onClick={item.href.startsWith("#") ? handleScrollToSection : undefined}
               className="text-muted-foreground hover:text-foreground group relative text-xs font-medium transition-colors lg:text-sm"
             >
-              {item}
+              {item.label}
               <span className="bg-primary absolute -bottom-1 left-0 h-0.5 w-0 transition-all duration-300 group-hover:w-full"></span>
             </motion.a>
           ))}
@@ -122,20 +145,20 @@ export function Header({ isScrolled, mobileMenuOpen, setMobileMenuOpen }: Header
           className="bg-background/95 absolute inset-x-0 top-16 border-b backdrop-blur-lg md:hidden"
         >
           <div className="container mx-auto flex flex-col gap-4 px-4 py-4">
-            {["Examples", "Features", "How It Works", "Roadmap", "FAQ"].map((item, i) => (
+            {navbarItems.map((item, i) => (
               <motion.a
-                key={item}
+                key={item.label}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.2, delay: i * 0.05 }}
-                href={`#${item.toLowerCase().replace(/\s+/g, "-")}`}
+                href={item.href}
                 onClick={(e) => {
                   handleScrollToSection(e);
                   setMobileMenuOpen(false);
                 }}
                 className="group relative overflow-hidden py-2 text-sm font-medium"
               >
-                <span className="relative z-10">{item}</span>
+                <span className="relative z-10">{item.href}</span>
                 <span className="bg-primary absolute bottom-0 left-0 h-0.5 w-0 transition-all duration-300 group-hover:w-full"></span>
               </motion.a>
             ))}
