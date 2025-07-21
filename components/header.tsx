@@ -37,12 +37,6 @@ export function Header() {
           <Separator orientation="vertical" className="h-8" />
           <div className="flex items-center gap-3.5">
             <div className="hidden items-center gap-3.5 md:flex">
-              <SocialLink
-                href="https://github.com/sponsors/jnsahaj"
-                className="flex items-center gap-1.5 rounded-md border px-2 py-1 transition-colors hover:border-pink-500 hover:text-pink-500"
-              >
-                <span className="text-sm font-medium">Sponsor</span>
-              </SocialLink>
               <SocialLink href="https://discord.gg/Phs4u2NM3n">
                 <DiscordIcon className="size-5" />
               </SocialLink>
