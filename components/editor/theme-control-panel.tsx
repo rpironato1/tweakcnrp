@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, Sparkles } from "lucide-react";
+import { AlertCircle, Sparkle } from "lucide-react";
 import React, { use } from "react";
 
 import { Label } from "@/components/ui/label";
@@ -105,7 +105,7 @@ const ThemeControlPanel = ({
                 value="ai"
                 className="data-[state=active]:[--effect:var(--secondary-foreground)] data-[state=active]:[--foreground:var(--muted-foreground)] data-[state=active]:[--muted-foreground:var(--effect)]"
               >
-                <Sparkles className="mr-1 size-3.5 text-current" />
+                <Sparkle className="mr-1 size-3.5 text-current" />
                 <span className="animate-text via-foreground from-muted-foreground to-muted-foreground flex items-center gap-1 bg-gradient-to-r from-50% via-60% to-100% bg-[200%_auto] bg-clip-text text-sm text-transparent">
                   Generate
                 </span>
