@@ -140,10 +140,12 @@ export function FigmaExportDialog({ open, onOpenChange }: FigmaExportDialogProps
               />
             </div>
 
-            <Button variant="link" className="gap-1 text-sm">
-              More on Shadcraft
-              <ArrowUpRight className="h-3 w-3" />
-            </Button>
+            <Link href="https://shadcraft.com" target="_blank">
+              <Button variant="link" className="gap-1 text-sm">
+                More on Shadcraft
+                <ArrowUpRight className="h-3 w-3" />
+              </Button>
+            </Link>
           </div>
 
           {/* Pricing */}
