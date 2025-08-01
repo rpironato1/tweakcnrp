@@ -60,7 +60,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Script
           id="shadcraft"
           dangerouslySetInnerHTML={{
-            __html: `window.lemonSqueezyAffiliateConfig = { store: "shadcraft" };`,
+            __html: `
+window.lemonSqueezyAffiliateConfig = {
+  store: 'mystore', // Replace with your store's subdomain
+  trackOnLoad: false,
+  onReady: function(e) {
+    e.Track('6NjlYZ');
+  }
+}`,
           }}
         />
         <Script id="affiliate" src="https://lmsqueezy.com/affiliate.js" defer />
