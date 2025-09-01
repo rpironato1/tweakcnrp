@@ -1,7 +1,6 @@
 import fs from "fs";
 import path from "path";
 import { defaultPresets } from "../utils/theme-presets";
-import { generateThemeRegistryFromPreset } from "@/utils/registry/themes";
 
 interface ThemeRegistry {
   $schema: string;
@@ -20,7 +19,41 @@ function generateRegistry() {
 
   // Convert defaultPresets to registry items
   for (const [name, preset] of Object.entries(defaultPresets)) {
-    const registryItem = generateThemeRegistryFromPreset(name);
+    // Create a simplified registry item for build time
+    const registryItem = {
+      $schema: "https://ui.shadcn.com/schema/registry-item.json",
+      name,
+      type: "registry:style",
+      css: {
+        "@layer base": {
+          body: {
+            "letter-spacing": "var(--tracking-normal)",
+          },
+        },
+      },
+      cssVars: {
+        theme: {
+          "font-sans": preset.styles.light["font-sans"] || "Inter, sans-serif",
+          "font-mono": preset.styles.light["font-mono"] || "monospace",
+          "font-serif": preset.styles.light["font-serif"] || "serif",
+          radius: preset.styles.light.radius || "0.5rem",
+          "tracking-tighter": "calc(var(--tracking-normal) - 0.05em)",
+          "tracking-tight": "calc(var(--tracking-normal) - 0.025em)",
+          "tracking-wide": "calc(var(--tracking-normal) + 0.025em)",
+          "tracking-wider": "calc(var(--tracking-normal) + 0.05em)",
+          "tracking-widest": "calc(var(--tracking-normal) + 0.1em)",
+        },
+        light: {
+          ...preset.styles.light,
+          "tracking-normal": preset.styles.light["letter-spacing"] || "0em",
+          spacing: preset.styles.light.spacing || "0.25rem",
+        },
+        dark: {
+          ...preset.styles.dark,
+        },
+      },
+    };
+
     const item = {
       name,
       type: "registry:style",

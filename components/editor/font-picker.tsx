@@ -112,7 +112,7 @@ export function FontPicker({
       observer.observe(node);
       return () => observer.unobserve(node);
     },
-    [fontQuery.hasNextPage, fontQuery.isFetchingNextPage, fontQuery.fetchNextPage]
+    [fontQuery]
   );
 
   const handleFontSelect = useCallback(

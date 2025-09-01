@@ -4,4 +4,4 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 
 // Executar o script principal
-import("./upgrade-user-to-pro.ts");
+import("./upgrade-user-to-pro.js");
